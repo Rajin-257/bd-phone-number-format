@@ -1,6 +1,6 @@
 {
   "name": "lib-bdphone",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Validate, normalize, and format Bangladesh mobile phone numbers.",
   "main": "index.js",
   "module": "index.mjs",
