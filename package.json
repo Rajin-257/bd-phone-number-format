@@ -1,0 +1,32 @@
+{
+  "name": "bd-phone-number-format",
+  "version": "1.0.0",
+  "description": "Validate, normalize, and format Bangladesh mobile phone numbers.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./index.js"
+    }
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "bangladesh",
+    "bd",
+    "phone",
+    "mobile",
+    "validation",
+    "format"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md"
+  ]
+}
