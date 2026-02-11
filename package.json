@@ -1,6 +1,6 @@
 {
   "name": "bd-phone-number-format",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Validate, normalize, and format Bangladesh mobile phone numbers.",
   "main": "index.js",
   "types": "index.d.ts",
