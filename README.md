@@ -28,23 +28,67 @@ const {
   isBdPhoneOperator
 } = require("bd-phone-number-format");
 
-console.log(isValidBdPhoneNumber("01712345678"));
+const number = "01712345678";
+
+// 1) Basic validity
+console.log(isValidBdPhoneNumber(number));
 // true
 
-console.log(normalizeBdPhoneNumber("+880 1712-345678"));
-// +8801712345678
+console.log(isValidBdPhoneNumber("1712345678", { allowMissingLeadingZero: false }));
+// false
 
-console.log(formatBdPhoneNumber("01712345678", "pretty"));
-// 017-123-45678
-
-console.log(getBdPhoneOperator("01712345678"));
-// Grameenphone
-
-console.log(isBdPhoneOperator("01812345678", "robi"));
+console.log(isValidBdPhoneNumber("01812345678", { expectedOperator: "Robi" }));
 // true
+
+// 2) Full validation object
+console.log(validateBdPhoneNumber(number));
+// {
+//   isValid: true,
+//   input: '01712345678',
+//   local: '01712345678',
+//   international: '8801712345678',
+//   e164: '+8801712345678',
+//   pretty: '017-123-45678',
+//   masked: '017****5678',
+//   operatorCode: '17',
+//   operator: 'Grameenphone'
+// }
 
 console.log(validateBdPhoneNumber("01212345678"));
 // { isValid: false, input: '01212345678', reason: 'Invalid Bangladesh mobile operator code.' }
+
+// 3) All output formats
+console.log(formatBdPhoneNumber(number, "local"));
+// 01712345678
+
+console.log(formatBdPhoneNumber(number, "international"));
+// 8801712345678
+
+console.log(formatBdPhoneNumber(number, "e164"));
+// +8801712345678
+
+console.log(formatBdPhoneNumber(number, "pretty"));
+// 017-123-45678
+
+console.log(formatBdPhoneNumber(number, "masked"));
+// 017****5678
+
+// 4) Normalize (default and custom)
+console.log(normalizeBdPhoneNumber("+880 1712-345678"));
+// +8801712345678
+
+console.log(normalizeBdPhoneNumber("+880 1712-345678", { format: "pretty" }));
+// 017-123-45678
+
+// 5) Operator detection/check
+console.log(getBdPhoneOperator(number));
+// Grameenphone
+
+console.log(isBdPhoneOperator(number, "gp"));
+// true
+
+console.log(isBdPhoneOperator(number, "robi"));
+// false
 ```
 
 ## API
