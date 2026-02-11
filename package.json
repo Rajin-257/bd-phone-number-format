@@ -1,5 +1,5 @@
 {
-  "name": "bd-phone-number-format",
+  "name": "lib-bdphone",
   "version": "1.0.9",
   "description": "Validate, normalize, and format Bangladesh mobile phone numbers.",
   "main": "index.js",
@@ -34,12 +34,12 @@
   "author": "Rajin",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Rajin-257/bd-phone-number-format.git"
+    "url": "git+https://github.com/Rajin-257/lib-bdphone.git"
   },
   "bugs": {
-    "url": "https://github.com/Rajin-257/bd-phone-number-format/issues"
+    "url": "https://github.com/Rajin-257/lib-bdphone/issues"
   },
-  "homepage": "https://github.com/Rajin-257/bd-phone-number-format#readme",
+  "homepage": "https://github.com/Rajin-257/lib-bdphone#readme",
   "license": "MIT",
   "type": "commonjs",
   "files": [

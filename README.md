@@ -1,10 +1,10 @@
-# bd-phone-number-format
+# lib-bdphone
 
 Validate, normalize, and format Bangladesh mobile phone numbers for Node.js projects.
 
-[![npm version](https://img.shields.io/npm/v/bd-phone-number-format.svg)](https://www.npmjs.com/package/bd-phone-number-format)
-[![npm downloads](https://img.shields.io/npm/dm/bd-phone-number-format.svg)](https://www.npmjs.com/package/bd-phone-number-format)
-[![CI](https://github.com/Rajin-257/bd-phone-number-format/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/Rajin-257/bd-phone-number-format/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/lib-bdphone.svg)](https://www.npmjs.com/package/lib-bdphone)
+[![npm downloads](https://img.shields.io/npm/dm/lib-bdphone.svg)](https://www.npmjs.com/package/lib-bdphone)
+[![CI](https://github.com/Rajin-257/lib-bdphone/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/Rajin-257/lib-bdphone/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Why this package
@@ -21,7 +21,7 @@ const {
   validateBdPhoneNumber,
   formatBdPhoneNumber,
   getBdPhoneOperator
-} = require("bd-phone-number-format");
+} = require("lib-bdphone");
 
 console.log(validateBdPhoneNumber("+880 1615-928286"));
 console.log(formatBdPhoneNumber("01615928286", "e164"));
@@ -40,7 +40,7 @@ console.log(getBdPhoneOperator("01615928286"));
 ## Installation
 
 ```bash
-npm install bd-phone-number-format
+npm install lib-bdphone
 ```
 
 ## Usage
@@ -55,7 +55,7 @@ const {
   refactorBdPhoneNumber,
   getBdPhoneOperator,
   isBdPhoneOperator
-} = require("bd-phone-number-format");
+} = require("lib-bdphone");
 
 const number = "01712345678";
 
@@ -280,8 +280,8 @@ Accepted names/aliases include:
 
 ## GitHub
 
-- Repository: https://github.com/Rajin-257/bd-phone-number-format.git
-- Issues: https://github.com/Rajin-257/bd-phone-number-format/issues
+- Repository: https://github.com/Rajin-257/lib-bdphone.git
+- Issues: https://github.com/Rajin-257/lib-bdphone/issues
 
 ## License
 
