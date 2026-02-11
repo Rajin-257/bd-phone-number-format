@@ -2,11 +2,24 @@
 
 const MOBILE_LOCAL_REGEX = /^01[3-9]\d{8}$/;
 
+const REASON_CODES = Object.freeze({
+  REQUIRED: "REQUIRED",
+  LETTER_NOT_ALLOWED: "LETTER_NOT_ALLOWED",
+  INVALID_PLUS_POSITION: "INVALID_PLUS_POSITION",
+  MISSING_DIGITS: "MISSING_DIGITS",
+  UNSUPPORTED_COUNTRY_CODE: "UNSUPPORTED_COUNTRY_CODE",
+  INVALID_LENGTH: "INVALID_LENGTH",
+  INVALID_START: "INVALID_START",
+  INVALID_OPERATOR_CODE: "INVALID_OPERATOR_CODE",
+  UNSUPPORTED_OPERATOR: "UNSUPPORTED_OPERATOR",
+  OPERATOR_MISMATCH: "OPERATOR_MISMATCH"
+});
+
 const OPERATOR_NAME_BY_CODE = Object.freeze({
   "13": "grameenphone",
   "14": "banglalink",
   "15": "teletalk",
-  "16": "robi",
+  "16": "airtel",
   "17": "grameenphone",
   "18": "robi",
   "19": "banglalink"
@@ -14,29 +27,45 @@ const OPERATOR_NAME_BY_CODE = Object.freeze({
 
 const OPERATOR_DISPLAY_BY_KEY = Object.freeze({
   grameenphone: "Grameenphone",
+  airtel: "Airtel",
   robi: "Robi",
   banglalink: "Banglalink",
-  teletalk: "Teletalk"
+  teletalk: "Teletalk",
+  robi_group: "Robi Group"
 });
 
 const OPERATOR_ALIASES = Object.freeze({
   gp: "grameenphone",
   grameenphone: "grameenphone",
   robi: "robi",
-  airtel: "robi",
-  "robi airtel": "robi",
+  airtel: "airtel",
+  "robi airtel": "robi_group",
+  "airtel robi": "robi_group",
+  "robi group": "robi_group",
+  robigroup: "robi_group",
+  "robi-airtel": "robi_group",
+  "airtel group": "robi_group",
   banglalink: "banglalink",
   bl: "banglalink",
   teletalk: "teletalk",
   tt: "teletalk"
 });
 
-function invalid(input, reason) {
+function invalid(input, reason, reasonCode) {
   return {
     isValid: false,
     input: input == null ? "" : String(input),
-    reason
+    reason,
+    reasonCode
   };
+}
+
+function toInputString(input) {
+  return input == null ? "" : String(input);
+}
+
+function toCleanDigits(input) {
+  return toInputString(input).replace(/\D/g, "");
 }
 
 function normalizeOperatorName(operatorName) {
@@ -53,13 +82,29 @@ function normalizeOperatorName(operatorName) {
   return OPERATOR_ALIASES[normalized] || null;
 }
 
+function operatorLabelFromKey(operatorKey) {
+  if (!operatorKey) {
+    return null;
+  }
+
+  return OPERATOR_DISPLAY_BY_KEY[operatorKey] || null;
+}
+
+function operatorMatchesExpected(expectedOperatorKey, detectedOperatorKey) {
+  if (expectedOperatorKey === "robi_group") {
+    return detectedOperatorKey === "robi" || detectedOperatorKey === "airtel";
+  }
+
+  return expectedOperatorKey === detectedOperatorKey;
+}
+
 function resolveOperator(operatorCode) {
   const key = OPERATOR_NAME_BY_CODE[operatorCode];
   if (!key) {
     return null;
   }
 
-  return OPERATOR_DISPLAY_BY_KEY[key] || null;
+  return operatorLabelFromKey(key);
 }
 
 function parseNonNegativeInteger(value, fieldName) {
@@ -91,34 +136,42 @@ function getTransformBase(result, base) {
 
 function toLocalCandidate(input, options) {
   if (input == null) {
-    return invalid(input, "Phone number is required.");
+    return invalid(input, "Phone number is required.", REASON_CODES.REQUIRED);
   }
 
   const raw = String(input).trim();
   if (!raw) {
-    return invalid(input, "Phone number is required.");
+    return invalid(input, "Phone number is required.", REASON_CODES.REQUIRED);
   }
 
   if (/[A-Za-z]/.test(raw)) {
-    return invalid(input, "Phone number cannot contain letters.");
+    return invalid(input, "Phone number cannot contain letters.", REASON_CODES.LETTER_NOT_ALLOWED);
   }
 
   const plusMatches = raw.match(/\+/g);
   const plusCount = plusMatches ? plusMatches.length : 0;
   if (plusCount > 1 || (plusCount === 1 && !raw.startsWith("+"))) {
-    return invalid(input, "Plus sign is only allowed once at the beginning.");
+    return invalid(
+      input,
+      "Plus sign is only allowed once at the beginning.",
+      REASON_CODES.INVALID_PLUS_POSITION
+    );
   }
 
   const digits = raw.replace(/\D/g, "");
   if (!digits) {
-    return invalid(input, "Phone number must contain digits.");
+    return invalid(input, "Phone number must contain digits.", REASON_CODES.MISSING_DIGITS);
   }
 
   let local;
 
   if (raw.startsWith("+")) {
     if (!digits.startsWith("880")) {
-      return invalid(input, "Only Bangladesh country code +880 is supported.");
+      return invalid(
+        input,
+        "Only Bangladesh country code +880 is supported.",
+        REASON_CODES.UNSUPPORTED_COUNTRY_CODE
+      );
     }
     local = `0${digits.slice(3)}`;
   } else if (digits.startsWith("00880")) {
@@ -134,15 +187,27 @@ function toLocalCandidate(input, options) {
   }
 
   if (local.length !== 11) {
-    return invalid(input, "Bangladesh mobile numbers must be 11 digits in local format.");
+    return invalid(
+      input,
+      "Bangladesh mobile numbers must be 11 digits in local format.",
+      REASON_CODES.INVALID_LENGTH
+    );
   }
 
   if (!/^01\d{9}$/.test(local)) {
-    return invalid(input, "Bangladesh mobile numbers must start with 01.");
+    return invalid(
+      input,
+      "Bangladesh mobile numbers must start with 01.",
+      REASON_CODES.INVALID_START
+    );
   }
 
   if (!MOBILE_LOCAL_REGEX.test(local)) {
-    return invalid(input, "Invalid Bangladesh mobile operator code.");
+    return invalid(
+      input,
+      "Invalid Bangladesh mobile operator code.",
+      REASON_CODES.INVALID_OPERATOR_CODE
+    );
   }
 
   return {
@@ -156,6 +221,7 @@ function buildValidResult(base) {
   const local = base.local;
   const core = local.slice(1);
   const operatorCode = local.slice(1, 3);
+  const operatorKey = OPERATOR_NAME_BY_CODE[operatorCode] || null;
   const operator = resolveOperator(operatorCode);
 
   return {
@@ -167,6 +233,7 @@ function buildValidResult(base) {
     pretty: `${local.slice(0, 3)}-${local.slice(3, 6)}-${local.slice(6)}`,
     masked: `${local.slice(0, 3)}****${local.slice(7)}`,
     operatorCode,
+    operatorKey,
     operator
   };
 }
@@ -178,7 +245,8 @@ function validateBdPhoneNumber(input, options = {}) {
   if (options.expectedOperator != null && !expectedOperatorKey) {
     return invalid(
       input,
-      "Unsupported operator. Use one of: Grameenphone, Robi, Banglalink, Teletalk."
+      "Unsupported operator. Use one of: Grameenphone, Airtel, Robi, Banglalink, Teletalk, Robi Group.",
+      REASON_CODES.UNSUPPORTED_OPERATOR
     );
   }
 
@@ -193,11 +261,11 @@ function validateBdPhoneNumber(input, options = {}) {
   const result = buildValidResult(candidate);
 
   if (expectedOperatorKey) {
-    const detectedOperatorKey = normalizeOperatorName(result.operator);
-    if (detectedOperatorKey !== expectedOperatorKey) {
+    if (!operatorMatchesExpected(expectedOperatorKey, result.operatorKey)) {
       return invalid(
         result.input,
-        `Phone number operator mismatch. Expected ${OPERATOR_DISPLAY_BY_KEY[expectedOperatorKey]}.`
+        `Phone number operator mismatch. Expected ${operatorLabelFromKey(expectedOperatorKey)}.`,
+        REASON_CODES.OPERATOR_MISMATCH
       );
     }
   }
@@ -236,6 +304,34 @@ function formatBdPhoneNumber(input, format = "local", options = {}) {
 function normalizeBdPhoneNumber(input, options = {}) {
   const format = options.format || "e164";
   return formatBdPhoneNumber(input, format, options);
+}
+
+function parseBdPhoneNumber(input, options = {}) {
+  const validated = validateBdPhoneNumber(input, options);
+
+  if (!validated.isValid) {
+    return {
+      input: toInputString(input),
+      cleaned: toCleanDigits(input),
+      isValid: false,
+      e164: null,
+      national: null,
+      carrierGuess: null,
+      reasonCode: validated.reasonCode,
+      reason: validated.reason
+    };
+  }
+
+  return {
+    input: toInputString(input),
+    cleaned: validated.local,
+    isValid: true,
+    e164: validated.e164,
+    national: validated.local,
+    carrierGuess: validated.operator,
+    reasonCode: null,
+    reason: null
+  };
 }
 
 function customizeBdPhoneNumber(input, options = {}) {
@@ -289,23 +385,25 @@ function isBdPhoneOperator(input, operatorName, options = {}) {
   const expectedOperatorKey = normalizeOperatorName(operatorName);
   if (!expectedOperatorKey) {
     throw new Error(
-      "Unsupported operator. Use one of: Grameenphone, Robi, Banglalink, Teletalk."
+      "Unsupported operator. Use one of: Grameenphone, Airtel, Robi, Banglalink, Teletalk, Robi Group."
     );
   }
 
-  const detectedOperator = getBdPhoneOperator(input, options);
-  if (!detectedOperator) {
+  const validated = validateBdPhoneNumber(input, options);
+  if (!validated.isValid) {
     return false;
   }
 
-  return normalizeOperatorName(detectedOperator) === expectedOperatorKey;
+  return operatorMatchesExpected(expectedOperatorKey, validated.operatorKey);
 }
 
 module.exports = {
+  REASON_CODES,
   validateBdPhoneNumber,
   isValidBdPhoneNumber,
   formatBdPhoneNumber,
   normalizeBdPhoneNumber,
+  parseBdPhoneNumber,
   customizeBdPhoneNumber,
   refactorBdPhoneNumber,
   getBdPhoneOperator,

@@ -4,10 +4,12 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
+  REASON_CODES,
   validateBdPhoneNumber,
   isValidBdPhoneNumber,
   formatBdPhoneNumber,
   normalizeBdPhoneNumber,
+  parseBdPhoneNumber,
   customizeBdPhoneNumber,
   refactorBdPhoneNumber,
   getBdPhoneOperator,
@@ -52,6 +54,7 @@ test("returns reason for invalid numbers", () => {
   const result = validateBdPhoneNumber("abc01712345678");
   assert.equal(result.isValid, false);
   assert.equal(result.reason, "Phone number cannot contain letters.");
+  assert.equal(result.reasonCode, REASON_CODES.LETTER_NOT_ALLOWED);
 });
 
 test("returns null for formatting invalid input", () => {
@@ -69,22 +72,37 @@ test("detects mobile operator from prefix", () => {
   assert.equal(gp.isValid, true);
   assert.equal(gp.operator, "Grameenphone");
 
-  assert.equal(getBdPhoneOperator("01612345678"), "Robi");
+  assert.equal(getBdPhoneOperator("01612345678"), "Airtel");
+  assert.equal(getBdPhoneOperator("01812345678"), "Robi");
   assert.equal(getBdPhoneOperator("01512345678"), "Teletalk");
   assert.equal(getBdPhoneOperator("01912345678"), "Banglalink");
 });
 
 test("checks expected operator through options and helper", () => {
   assert.equal(
-    isValidBdPhoneNumber("01812345678", { expectedOperator: "robi" }),
+    isValidBdPhoneNumber("01812345678", { expectedOperator: "Robi" }),
     true
   );
   assert.equal(
-    isValidBdPhoneNumber("01812345678", { expectedOperator: "Grameenphone" }),
+    isValidBdPhoneNumber("01612345678", { expectedOperator: "Airtel" }),
+    true
+  );
+  assert.equal(
+    isValidBdPhoneNumber("01612345678", { expectedOperator: "Robi Group" }),
+    true
+  );
+  assert.equal(
+    isValidBdPhoneNumber("01812345678", { expectedOperator: "Robi Group" }),
+    true
+  );
+  assert.equal(
+    isValidBdPhoneNumber("01612345678", { expectedOperator: "Robi" }),
     false
   );
   assert.equal(isBdPhoneOperator("01712345678", "gp"), true);
-  assert.equal(isBdPhoneOperator("01712345678", "robi"), false);
+  assert.equal(isBdPhoneOperator("01612345678", "airtel"), true);
+  assert.equal(isBdPhoneOperator("01612345678", "Robi Group"), true);
+  assert.equal(isBdPhoneOperator("01712345678", "Robi"), false);
 });
 
 test("throws for unsupported operator in helper", () => {
@@ -183,4 +201,31 @@ test("customize throws for invalid transform options", () => {
       removeFromStart: 11
     })
   );
+});
+
+test("returns stable parse output contract", () => {
+  const valid = parseBdPhoneNumber("+8801615928286");
+  assert.deepEqual(valid, {
+    input: "+8801615928286",
+    cleaned: "01615928286",
+    isValid: true,
+    e164: "+8801615928286",
+    national: "01615928286",
+    carrierGuess: "Airtel",
+    reasonCode: null,
+    reason: null
+  });
+
+  const invalid = parseBdPhoneNumber("0123");
+  assert.equal(invalid.isValid, false);
+  assert.equal(invalid.e164, null);
+  assert.equal(invalid.national, null);
+  assert.equal(invalid.carrierGuess, null);
+  assert.equal(invalid.reasonCode, REASON_CODES.INVALID_LENGTH);
+});
+
+test("supports ESM import", async () => {
+  const esm = await import("../index.mjs");
+  assert.equal(typeof esm.validateBdPhoneNumber, "function");
+  assert.equal(esm.getBdPhoneOperator("01612345678"), "Airtel");
 });

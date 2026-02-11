@@ -13,6 +13,7 @@ Validate, normalize, and format Bangladesh mobile phone numbers for Node.js proj
 - Returns structured validation with operator info for easier backend and UI handling
 - Includes advanced refactor tools (trim start/end digits, add prefix/suffix, custom separators)
 - Lightweight utility with built-in TypeScript definitions and automated tests
+- Ships both CJS and ESM entry points for modern Node.js projects
 
 ## Quick Start (30 seconds)
 
@@ -28,6 +29,14 @@ console.log(formatBdPhoneNumber("01615928286", "e164"));
 console.log(getBdPhoneOperator("01615928286"));
 ```
 
+ESM usage:
+
+```js
+import { parseBdPhoneNumber } from "lib-bdphone";
+
+console.log(parseBdPhoneNumber("+8801615928286"));
+```
+
 ## Features
 
 - Validates Bangladesh mobile numbers (local and international forms)
@@ -35,7 +44,8 @@ console.log(getBdPhoneOperator("01615928286"));
 - Supports input cleanup (`+880 1712-345678`, `8801712345678`, `01712345678`, etc.)
 - Returns multiple output formats: local, international, E.164, pretty, and masked
 - Supports custom refactor flow (remove from start/end and add your own prefix/suffix)
-- Provides clear validation error reasons
+- Provides clear validation error reasons with typed `reasonCode`
+- Includes stable parse output via `parseBdPhoneNumber()`
 
 ## Installation
 
@@ -47,10 +57,12 @@ npm install lib-bdphone
 
 ```js
 const {
+  REASON_CODES,
   validateBdPhoneNumber,
   isValidBdPhoneNumber,
   formatBdPhoneNumber,
   normalizeBdPhoneNumber,
+  parseBdPhoneNumber,
   customizeBdPhoneNumber,
   refactorBdPhoneNumber,
   getBdPhoneOperator,
@@ -69,6 +81,12 @@ console.log(isValidBdPhoneNumber("1712345678", { allowMissingLeadingZero: false 
 console.log(isValidBdPhoneNumber("01812345678", { expectedOperator: "Robi" }));
 // true
 
+console.log(isValidBdPhoneNumber("01612345678", { expectedOperator: "Airtel" }));
+// true
+
+console.log(isValidBdPhoneNumber("01612345678", { expectedOperator: "Robi Group" }));
+// true
+
 // 2) Full validation object
 console.log(validateBdPhoneNumber(number));
 // {
@@ -84,7 +102,12 @@ console.log(validateBdPhoneNumber(number));
 // }
 
 console.log(validateBdPhoneNumber("01212345678"));
-// { isValid: false, input: '01212345678', reason: 'Invalid Bangladesh mobile operator code.' }
+// {
+//   isValid: false,
+//   input: '01212345678',
+//   reason: 'Invalid Bangladesh mobile operator code.',
+//   reasonCode: 'INVALID_OPERATOR_CODE'
+// }
 
 // 3) All output formats
 console.log(formatBdPhoneNumber(number, "local"));
@@ -119,7 +142,26 @@ console.log(isBdPhoneOperator(number, "gp"));
 console.log(isBdPhoneOperator(number, "robi"));
 // false
 
-// 6) Custom refactor: remove digits + add your own prefix
+console.log(isBdPhoneOperator("01612345678", "Airtel"));
+// true
+
+console.log(isBdPhoneOperator("01612345678", "Robi Group"));
+// true
+
+// 6) Stable parse output
+console.log(parseBdPhoneNumber("+8801615928286"));
+// {
+//   input: '+8801615928286',
+//   cleaned: '01615928286',
+//   isValid: true,
+//   e164: '+8801615928286',
+//   national: '01615928286',
+//   carrierGuess: 'Airtel',
+//   reasonCode: null,
+//   reason: null
+// }
+
+// 7) Custom refactor: remove digits + add your own prefix
 console.log(customizeBdPhoneNumber("01615928286", { removeFromStart: 1, prefix: "+880" }));
 // +8801615928286
 
@@ -179,7 +221,8 @@ Failure:
 {
   isValid: false,
   input: 'abc',
-  reason: 'Phone number cannot contain letters.'
+  reason: 'Phone number cannot contain letters.',
+  reasonCode: 'LETTER_NOT_ALLOWED'
 }
 ```
 
@@ -205,6 +248,36 @@ Shortcut for returning one normalized format.
 
 - Default format is `e164`
 - You can pass `options.format`
+
+### `parseBdPhoneNumber(input, options?)`
+
+Returns a stable parse contract for app-level consumption:
+
+```js
+{
+  input: '+8801615928286',
+  cleaned: '01615928286',
+  isValid: true,
+  e164: '+8801615928286',
+  national: '01615928286',
+  carrierGuess: 'Airtel',
+  reasonCode: null,
+  reason: null
+}
+```
+
+Available reason codes are exported as `REASON_CODES`:
+
+- `REQUIRED`
+- `LETTER_NOT_ALLOWED`
+- `INVALID_PLUS_POSITION`
+- `MISSING_DIGITS`
+- `UNSUPPORTED_COUNTRY_CODE`
+- `INVALID_LENGTH`
+- `INVALID_START`
+- `INVALID_OPERATOR_CODE`
+- `UNSUPPORTED_OPERATOR`
+- `OPERATOR_MISMATCH`
 
 ### `customizeBdPhoneNumber(input, options?)`
 
@@ -238,7 +311,8 @@ Returns operator name for a valid number, otherwise `null`.
 Possible return values:
 
 - `Grameenphone` (`013`, `017`)
-- `Robi` (`016`, `018`)
+- `Airtel` (`016`)
+- `Robi` (`018`)
 - `Banglalink` (`014`, `019`)
 - `Teletalk` (`015`)
 
@@ -249,7 +323,9 @@ Checks whether a number belongs to a specific operator.
 Accepted names/aliases include:
 
 - `grameenphone`, `gp`
-- `robi`, `airtel`, `robi airtel`
+- `airtel`
+- `robi`
+- `robi group`, `robigroup`, `robi airtel`, `airtel robi`
 - `banglalink`, `bl`
 - `teletalk`, `tt`
 
@@ -258,7 +334,8 @@ Accepted names/aliases include:
 - `allowMissingLeadingZero` (default: `true`)
   - Allows input like `1712345678` and converts it to local form `01712345678`
 - `expectedOperator` (optional)
-  - Example: `validateBdPhoneNumber('01812345678', { expectedOperator: 'Robi' })`
+  - Example: `validateBdPhoneNumber('01612345678', { expectedOperator: 'Airtel' })`
+  - Group example: `validateBdPhoneNumber('01612345678', { expectedOperator: 'Robi Group' })`
 
 ## Use Cases
 
