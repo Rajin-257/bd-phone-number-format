@@ -14,6 +14,8 @@ export interface BdPhoneTransformOptions extends BdPhoneOptions {
   removeFromEnd?: number;
   prefix?: string;
   separator?: string;
+  suffix?: string;
+  suffixSeparator?: string;
 }
 
 export interface BdPhoneValidationFailure {

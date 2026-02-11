@@ -255,12 +255,21 @@ function customizeBdPhoneNumber(input, options = {}) {
   const trimmed = baseValue.slice(removeFromStart, baseValue.length - removeFromEnd);
   const prefix = options.prefix == null ? "" : String(options.prefix);
   const separator = options.separator == null ? "" : String(options.separator);
+  const suffix = options.suffix == null ? "" : String(options.suffix);
+  const suffixSeparator = options.suffixSeparator == null ? "" : String(options.suffixSeparator);
 
+  let transformed;
   if (prefix && separator) {
-    return `${prefix}${separator}${trimmed}`;
+    transformed = `${prefix}${separator}${trimmed}`;
+  } else {
+    transformed = `${prefix}${trimmed}`;
   }
 
-  return `${prefix}${trimmed}`;
+  if (suffix && suffixSeparator) {
+    return `${transformed}${suffixSeparator}${suffix}`;
+  }
+
+  return `${transformed}${suffix}`;
 }
 
 function refactorBdPhoneNumber(input, options = {}) {

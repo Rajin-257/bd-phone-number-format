@@ -8,7 +8,7 @@ Validate, normalize, and format Bangladesh mobile phone numbers for Node.js proj
 - Ensures local format has 11 digits and starts with valid prefixes (`01[3-9]`)
 - Supports input cleanup (`+880 1712-345678`, `8801712345678`, `01712345678`, etc.)
 - Returns multiple output formats: local, international, E.164, pretty, and masked
-- Supports custom refactor flow (remove from start/end and add your own prefix)
+- Supports custom refactor flow (remove from start/end and add your own prefix/suffix)
 - Provides clear validation error reasons
 
 ## Installation
@@ -111,6 +111,18 @@ console.log(customizeBdPhoneNumber("01615928286", { removeFromStart: 1, removeFr
 
 console.log(refactorBdPhoneNumber("01615928286", { removeFromStart: 1, prefix: "880" }));
 // 8801615928286
+
+console.log(customizeBdPhoneNumber("01615928286", { removeFromStart: 1, suffix: "-RAW" }));
+// 1615928286-RAW
+
+console.log(customizeBdPhoneNumber("01615928286", {
+  removeFromStart: 1,
+  prefix: "+880",
+  separator: " ",
+  suffix: "BD",
+  suffixSeparator: " #"
+}));
+// +880 1615928286 #BD
 ```
 
 ## API
@@ -170,7 +182,7 @@ Shortcut for returning one normalized format.
 
 ### `customizeBdPhoneNumber(input, options?)`
 
-Transforms a valid number by removing digits from start/end and adding your custom prefix.
+Transforms a valid number by removing digits from start/end and adding your custom prefix/suffix.
 
 Options:
 
@@ -179,6 +191,8 @@ Options:
 - `removeFromEnd`: number of digits to cut from the end
 - `prefix`: your custom prefix string (for example `+880`, `880`, `X`)
 - `separator`: text inserted between prefix and final number
+- `suffix`: your custom suffix string (for example `-RAW`, `-BD`)
+- `suffixSeparator`: text inserted between final number and suffix
 
 Example:
 

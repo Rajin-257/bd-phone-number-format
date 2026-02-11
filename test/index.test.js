@@ -124,12 +124,40 @@ test("customize function can remove from start and end", () => {
     }),
     "+-1615928286"
   );
+
+  assert.equal(
+    customizeBdPhoneNumber("01615928286", {
+      removeFromStart: 1,
+      suffix: "-RAW"
+    }),
+    "1615928286-RAW"
+  );
+
+  assert.equal(
+    customizeBdPhoneNumber("01615928286", {
+      removeFromStart: 1,
+      prefix: "+880",
+      separator: " ",
+      suffix: "BD",
+      suffixSeparator: " #"
+    }),
+    "+880 1615928286 #BD"
+  );
 });
 
 test("refactor alias works same as customize", () => {
   assert.equal(
     refactorBdPhoneNumber("01615928286", { removeFromStart: 1, prefix: "880" }),
     "8801615928286"
+  );
+
+  assert.equal(
+    refactorBdPhoneNumber("01615928286", {
+      removeFromStart: 1,
+      prefix: "880",
+      suffix: "XYZ"
+    }),
+    "8801615928286XYZ"
   );
 });
 
