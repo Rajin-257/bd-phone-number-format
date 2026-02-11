@@ -2,12 +2,64 @@
 
 const MOBILE_LOCAL_REGEX = /^01[3-9]\d{8}$/;
 
+const OPERATOR_NAME_BY_CODE = Object.freeze({
+  "13": "grameenphone",
+  "14": "banglalink",
+  "15": "teletalk",
+  "16": "robi",
+  "17": "grameenphone",
+  "18": "robi",
+  "19": "banglalink"
+});
+
+const OPERATOR_DISPLAY_BY_KEY = Object.freeze({
+  grameenphone: "Grameenphone",
+  robi: "Robi",
+  banglalink: "Banglalink",
+  teletalk: "Teletalk"
+});
+
+const OPERATOR_ALIASES = Object.freeze({
+  gp: "grameenphone",
+  grameenphone: "grameenphone",
+  robi: "robi",
+  airtel: "robi",
+  "robi airtel": "robi",
+  banglalink: "banglalink",
+  bl: "banglalink",
+  teletalk: "teletalk",
+  tt: "teletalk"
+});
+
 function invalid(input, reason) {
   return {
     isValid: false,
     input: input == null ? "" : String(input),
     reason
   };
+}
+
+function normalizeOperatorName(operatorName) {
+  if (typeof operatorName !== "string") {
+    return null;
+  }
+
+  const normalized = operatorName
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+
+  return OPERATOR_ALIASES[normalized] || null;
+}
+
+function resolveOperator(operatorCode) {
+  const key = OPERATOR_NAME_BY_CODE[operatorCode];
+  if (!key) {
+    return null;
+  }
+
+  return OPERATOR_DISPLAY_BY_KEY[key] || null;
 }
 
 function toLocalCandidate(input, options) {
@@ -76,6 +128,8 @@ function toLocalCandidate(input, options) {
 function buildValidResult(base) {
   const local = base.local;
   const core = local.slice(1);
+  const operatorCode = local.slice(1, 3);
+  const operator = resolveOperator(operatorCode);
 
   return {
     isValid: true,
@@ -85,11 +139,22 @@ function buildValidResult(base) {
     e164: `+880${core}`,
     pretty: `${local.slice(0, 3)}-${local.slice(3, 6)}-${local.slice(6)}`,
     masked: `${local.slice(0, 3)}****${local.slice(7)}`,
-    operatorCode: local.slice(1, 3)
+    operatorCode,
+    operator
   };
 }
 
 function validateBdPhoneNumber(input, options = {}) {
+  const expectedOperatorKey =
+    options.expectedOperator == null ? null : normalizeOperatorName(options.expectedOperator);
+
+  if (options.expectedOperator != null && !expectedOperatorKey) {
+    return invalid(
+      input,
+      "Unsupported operator. Use one of: Grameenphone, Robi, Banglalink, Teletalk."
+    );
+  }
+
   const candidate = toLocalCandidate(input, {
     allowMissingLeadingZero: options.allowMissingLeadingZero !== false
   });
@@ -98,7 +163,19 @@ function validateBdPhoneNumber(input, options = {}) {
     return candidate;
   }
 
-  return buildValidResult(candidate);
+  const result = buildValidResult(candidate);
+
+  if (expectedOperatorKey) {
+    const detectedOperatorKey = normalizeOperatorName(result.operator);
+    if (detectedOperatorKey !== expectedOperatorKey) {
+      return invalid(
+        result.input,
+        `Phone number operator mismatch. Expected ${OPERATOR_DISPLAY_BY_KEY[expectedOperatorKey]}.`
+      );
+    }
+  }
+
+  return result;
 }
 
 function isValidBdPhoneNumber(input, options = {}) {
@@ -134,9 +211,36 @@ function normalizeBdPhoneNumber(input, options = {}) {
   return formatBdPhoneNumber(input, format, options);
 }
 
+function getBdPhoneOperator(input, options = {}) {
+  const result = validateBdPhoneNumber(input, options);
+  if (!result.isValid) {
+    return null;
+  }
+
+  return result.operator;
+}
+
+function isBdPhoneOperator(input, operatorName, options = {}) {
+  const expectedOperatorKey = normalizeOperatorName(operatorName);
+  if (!expectedOperatorKey) {
+    throw new Error(
+      "Unsupported operator. Use one of: Grameenphone, Robi, Banglalink, Teletalk."
+    );
+  }
+
+  const detectedOperator = getBdPhoneOperator(input, options);
+  if (!detectedOperator) {
+    return false;
+  }
+
+  return normalizeOperatorName(detectedOperator) === expectedOperatorKey;
+}
+
 module.exports = {
   validateBdPhoneNumber,
   isValidBdPhoneNumber,
   formatBdPhoneNumber,
-  normalizeBdPhoneNumber
+  normalizeBdPhoneNumber,
+  getBdPhoneOperator,
+  isBdPhoneOperator
 };

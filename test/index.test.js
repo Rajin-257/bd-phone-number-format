@@ -7,7 +7,9 @@ const {
   validateBdPhoneNumber,
   isValidBdPhoneNumber,
   formatBdPhoneNumber,
-  normalizeBdPhoneNumber
+  normalizeBdPhoneNumber,
+  getBdPhoneOperator,
+  isBdPhoneOperator
 } = require("../index");
 
 test("accepts valid local Bangladesh mobile number", () => {
@@ -57,5 +59,34 @@ test("returns null for formatting invalid input", () => {
 test("throws when format value is unsupported", () => {
   assert.throws(() => formatBdPhoneNumber("01712345678", "raw"), {
     message: /Unsupported format/
+  });
+});
+
+test("detects mobile operator from prefix", () => {
+  const gp = validateBdPhoneNumber("01712345678");
+  assert.equal(gp.isValid, true);
+  assert.equal(gp.operator, "Grameenphone");
+
+  assert.equal(getBdPhoneOperator("01612345678"), "Robi");
+  assert.equal(getBdPhoneOperator("01512345678"), "Teletalk");
+  assert.equal(getBdPhoneOperator("01912345678"), "Banglalink");
+});
+
+test("checks expected operator through options and helper", () => {
+  assert.equal(
+    isValidBdPhoneNumber("01812345678", { expectedOperator: "robi" }),
+    true
+  );
+  assert.equal(
+    isValidBdPhoneNumber("01812345678", { expectedOperator: "Grameenphone" }),
+    false
+  );
+  assert.equal(isBdPhoneOperator("01712345678", "gp"), true);
+  assert.equal(isBdPhoneOperator("01712345678", "robi"), false);
+});
+
+test("throws for unsupported operator in helper", () => {
+  assert.throws(() => isBdPhoneOperator("01712345678", "unknown-operator"), {
+    message: /Unsupported operator/
   });
 });
